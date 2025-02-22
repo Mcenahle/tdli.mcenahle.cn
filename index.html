@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<!-- tdli.mcenahle.cn 是自由软件：你可以再分发之和/或依照由自由软件基金会发布的 GNU 通用公共许可证修改之，无论是版本 3 许可证，还是（按你的决定）任何以后版都可以。
+发布该程序是希望它能有用，但是并无保障；甚至连可销售和符合某个特定的目的都不保证。请参看 GNU 通用公共许可证，了解详情。
+你应该随程序获得一份 GNU 通用公共许可证的复本。如果没有，请看 https://www.gnu.org/licenses/。-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <link rel="icon" href="./favicon.png">
+    <title>待办事项列表</title>
+    <style>
+        /* 新增样式 */
+        #todo-list li span {
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+        #todo-list li button {
+            flex-shrink: 0;
+        }
+        /* 原有样式保持不变 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        #todo-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #todo-list li {
+            background-color: #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #todo-list li.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+        #new-task {
+            padding: 10px;
+            width: calc(100% - 22px);
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 编辑任务模态框 -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">更改任务</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <p>目前的任务为：<span id="current-task-text"></span></p>
+                    <p>请在下面的输入框内输入新的任务内容：</p>
+                    <input type="text" id="edit-task-input" class="form-control" placeholder="请输入新的任务内容">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-task-changes">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面内容 -->
+    <h1 align="center">待办事项列表</h1>
+    <br>
+    <div class="d-grid gap-3">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="new-task" placeholder="输入新任务" style="flex: 1;">
+            <button type="button" class="btn btn-success" id="add-task">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                </svg> 添加任务
+            </button>
+        </div>
+        <br>
+    </div>
+    <ul id="todo-list">
+        <!-- 任务将动态添加到这里 -->
+    </ul>
+    <div class="file-actions">
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-primary w-50 me-2" id="import-tasks">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-arrow-up" viewBox="0 0 16 16">
+                    <path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 8.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707z"/>
+                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                </svg> 打开任务文件 (.tdli)
+            </button>
+            <button type="button" class="btn btn-outline-success w-50" id="export-tasks">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-floppy2-fill" viewBox="0 0 16 16">
+                    <path d="M12 2h-2v3h2z"/>
+                    <path d="M1.5 0A1.5 1.5 0 0 0 0 1.5v13A1.5 1.5 0 0 0 1.5 16h13a1.5 1.5 0 0 0 1.5-1.5V2.914a1.5 1.5 0 0 0-.44-1.06L14.147.439A1.5 1.5 0 0 0 13.086 0zM4 6a1 1 0 0 1-1-1V1h10v4a1 1 0 0 1-1 1zM3 9h10a1 1 0 0 1 1 1v5H2v-5a1 1 0 0 1 1-1"/>
+                </svg> 保存并导出任务文件 (.tdli)
+            </button>
+            <br>
+        </div>
+    </div>
+
+    <!-- 文件类型错误模态框 -->
+    <div class="modal fade" id="fileTypeModal" tabindex="-1" aria-labelledby="fileTypeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fileTypeModalLabel">文件类型错误</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    上传的文件不是有效的 .tdli 文件。
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// 添加任务函数
+function addTask(taskText, completed = false) {
+    const todoList = document.getElementById('todo-list');
+    const li = document.createElement('li');
+
+    // 创建复选框
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = completed;
+    checkbox.addEventListener('change', function () {
+        li.classList.toggle('completed', checkbox.checked);
+        // 根据复选框的状态，停用或启用编辑按钮
+        editButton.disabled = checkbox.checked;
+    });
+    li.appendChild(checkbox);
+
+    // 创建任务文本容器
+    const taskSpan = document.createElement('span');
+    taskSpan.textContent = taskText;
+    li.appendChild(taskSpan);
+
+    // 创建编辑按钮
+    const editButton = document.createElement('button');
+    editButton.className = 'btn btn-sm btn-primary me-2';
+    editButton.textContent = '编辑';
+    editButton.addEventListener('click', function () {
+        // 设置模态框中的当前任务内容
+        document.getElementById('current-task-text').textContent = taskSpan.textContent;
+        // 设置输入框的初始值为当前任务内容
+        document.getElementById('edit-task-input').value = taskSpan.textContent;
+
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('editTaskModal'));
+
+        // 设置保存按钮的点击事件
+        const saveBtn = document.getElementById('save-task-changes');
+        const saveHandler = function () {
+            const newText = document.getElementById('edit-task-input').value.trim();
+            if (newText) {
+                taskSpan.textContent = newText; // 更新任务内容
+                modal.hide(); // 关闭模态框
+            }
+        };
+
+        // 移除旧的事件监听器并添加新的
+        saveBtn.removeEventListener('click', saveHandler); // 确保不会重复绑定
+        saveBtn.addEventListener('click', saveHandler);
+
+        modal.show();
+    });
+    li.appendChild(editButton);
+
+    // 创建删除按钮
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'btn btn-sm btn-danger';
+    deleteButton.textContent = '删除';
+    deleteButton.addEventListener('click', function () {
+        // 提示用户确认删除
+        if (confirm('你确定要删除这项任务吗？')) {
+            todoList.removeChild(li);
+        }
+    });
+    li.appendChild(deleteButton);
+
+    li.classList.toggle('completed', completed);
+    todoList.appendChild(li);
+
+    // 根据初始的 completed 状态来设置“编辑”按钮是否禁用
+    editButton.disabled = completed;
+}
+
+// 添加任务按钮事件
+document.getElementById('add-task').addEventListener('click', function () {
+    const taskText = document.getElementById('new-task').value.trim();
+    if (taskText) {
+        addTask(taskText);
+        document.getElementById('new-task').value = ''; // 清空输入框
+    }
+});
+
+// 导出任务逻辑
+document.getElementById('export-tasks').addEventListener('click', function () {
+    const tasks = [];
+    document.querySelectorAll('#todo-list li').forEach(li => {
+        const span = li.querySelector('span');
+        const text = span ? span.textContent.trim() : '';
+        const completed = li.classList.contains('completed') ? '1' : '0';
+        if (text) tasks.push(`${completed}|${text}`);
+    });
+
+    // 获取当前时间
+    const now = new Date();
+    const timestamp = now.getFullYear() 
+        + String(now.getMonth() + 1).padStart(2, '0') 
+        + String(now.getDate()).padStart(2, '0') 
+        + '-' 
+        + String(now.getHours()).padStart(2, '0') 
+        + String(now.getMinutes()).padStart(2, '0') 
+        + String(now.getSeconds()).padStart(2, '0');
+
+    // 添加导出说明和时间
+    // tasks.push('');
+    //tasks.push(`导出日期：${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+    //tasks.push(`导出时间：${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`);
+    //tasks.push('在 tdli.mcenahle.cn 上导出。');
+
+    // 创建 Blob 并生成下载链接
+    const blob = new Blob([tasks.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const filename = `tasks-list-${timestamp}.tdli`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+
+    URL.revokeObjectURL(url);
+});
+
+// 导入任务文件
+document.getElementById('import-tasks').addEventListener('click', function () {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.tdli';
+
+    // 禁用按钮并更改文字
+    this.disabled = false;  // 禁用按钮
+
+    input.addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        if (file) {
+            const fileName = file.name.trim().toLowerCase();
+            const validExtension = fileName.endsWith('.tdli');
+            const validMimeType = file.type === '' || file.type === 'text/plain';
+
+            if (!validExtension || !validMimeType) {
+                const modal = new bootstrap.Modal(document.getElementById('fileTypeModal'));
+                modal.show();
+
+                input.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                const tasks = content.split('\n').filter(task => {
+                    const parts = task.split('|');
+                    return parts.length > 1 && parts[1].trim() !== '';
+                });
+
+                tasks.forEach(task => {
+                    const parts = task.split('|');
+                    const completed = parts[0] === '1';
+                    const text = parts.slice(1).join('|');
+                    addTask(text, completed);
+                });
+
+                input.remove();
+
+                // 完成后可以启用按钮并恢复按钮文字
+                document.getElementById('import-tasks').disabled = true;  // 启用按钮
+                document.getElementById('import-tasks').innerText = "导入任务功能目前已被停用。编辑并保存当前的 .tdli 文件以继续编辑。";  // 恢复按钮文字为原来的文本
+            };
+            reader.readAsText(file);
+        }
+    });
+    input.click();
+});
+
+
+    </script>
+    <br>
+    <p align="center"><a href="https://docs.mcenahle.cn/zh/tdli" target="_blank" style="text-decoration: none;">了解 .tdli 文件格式 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+        <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+    </svg></a> | <a href="https://docs.mcenahle.cn/zh/tdli-tutorial" target="_blank" style="text-decoration: none;">本站使用方法 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+        <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+    </svg></a> | <a href="https://tdli.mcenahle.cn/feedback.html" target="_blank" style="text-decoration: none;">反馈问题 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-up-right" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M14 2.5a.5.5 0 0 0-.5-.5h-6a.5.5 0 0 0 0 1h4.793L2.146 13.146a.5.5 0 0 0 .708.708L13 3.707V8.5a.5.5 0 0 0 1 0z"/>
+</svg></a></p>
+    <p align="center">© 2025 tdli.mcenahle.cn（待办事项列表）。保留所有权利。</p>
+    <p align="center"><i>本软件采用 GPL-3.0 开源许可证进行开源。<a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" style="text-decoration: none;">了解这意味着什么。 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+        <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+    </svg></a></i></p>
+</body>
+</html>
